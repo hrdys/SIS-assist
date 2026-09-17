@@ -10,6 +10,10 @@ const page = await context.newPage();
 page.on('dialog', dialog => dialog.accept());
 // 0. Otevřít SIS a přihlásit se
 await page.goto(`${SIS_URL}/index.php?sso`);
+
+await page.getByRole('button', { name: 'Identita občana' }).click();
+await page.getByRole('button', { name: 'Mobilní klíč eGovernmentu' }).click();
+
 await page.waitForURL(`${SIS_URL}/index.php*`, { timeout: 0, waitUntil: 'domcontentloaded' });
 const session_id = new URL(page.url()).searchParams.get("id");
 
