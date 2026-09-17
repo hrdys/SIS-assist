@@ -7,7 +7,7 @@ const ZMODUL_URL = `${SIS_URL}/predm_st2/index.php?tid=`;
 const browser = await chromium.connectOverCDP("http://localhost:9222");
 const context = await browser.contexts()[0];
 const page = await context.newPage();
-
+page.on('dialog', dialog => dialog.accept());
 // 0. Otevřít SIS a přihlásit se
 await page.goto(`${SIS_URL}/index.php?sso`);
 await page.waitForURL(`${SIS_URL}/index.php*`, { timeout: 0, waitUntil: 'domcontentloaded' });
