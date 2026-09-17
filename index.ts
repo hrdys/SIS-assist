@@ -4,8 +4,8 @@ const SIS_URL = `https://is.cuni.cz/teststud`;
 const ZAPSAT_URL = `${SIS_URL}/predm_st2/redir.php?tid=&redir=povinn`;
 const ZMODUL_URL = `${SIS_URL}/predm_st2/index.php?tid=`;
 
-const browser = await chromium.connectOverCDP("http://localhost:9222");
-const context = await browser.contexts()[0];
+const browser = await chromium.launch({headless: false});
+const context = await browser.newContext();
 const page = await context.newPage();
 page.on('dialog', dialog => dialog.accept());
 // 0. Otevřít SIS a přihlásit se
@@ -13,6 +13,7 @@ await page.goto(`${SIS_URL}/index.php?sso`);
 await page.waitForURL(`${SIS_URL}/index.php*`, { timeout: 0, waitUntil: 'domcontentloaded' });
 const session_id = new URL(page.url()).searchParams.get("id");
 
+// ###################### Kódy lístků ######################
 const tickets: Array<string> = [
   "26aNDMI002p1",
   "26aNDMI002x01",
@@ -21,9 +22,15 @@ const tickets: Array<string> = [
   "26aNMAI057x01",
   "26aNMAI069x01",
 ];
-const subject_set = new Set(tickets.map(val => val.slice(3, 10)));
+// #########################################################
 
-await Bun.sleep(new Date(1789667641000));
+const regex = /^\d{2}[ab](.+)(?:p\d|x\d{2})$/gm;
+const subject_set = new Set(tickets.map(ticket => ticket.replace(regex, "$1")));
+
+// ################ SCHEDULER (use miliseconds since Unix epoch) ################
+const SCHEDULED_UNIX_TIMESTAMP_MS: number = 1789667641000
+// #############################################################################
+await Bun.sleep(new Date(SCHEDULED_UNIX_TIMESTAMP_MS));
 
 const startTime = performance.now();
 
