@@ -1,0 +1,9 @@
+const tickets: Array<string> = [
+  "26aNDMI050x02", // již zapsán
+  "26aNEEXISTUJIp1", // neexistuje/nejsou opravneni
+  "26aNAIL062x05", // plný - čekačka 
+  "26aNAIL062p1", // plný - čekačka
+  "26aHDPV0001x01", // plný bez čekačky (právo moment)
+  "26aNDMI002p2", // částečný zápis
+  "26aNMAI069x01"// úspěch
+];

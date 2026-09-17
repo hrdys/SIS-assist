@@ -19,12 +19,13 @@ const session_id = new URL(page.url()).searchParams.get("id");
 
 // ###################### Kódy lístků ######################
 const tickets: Array<string> = [
-  "26aNDMI002p1",
-  "26aNDMI002x01",
-  "26aNJAZ170x12",
-  "26aNMAI057p1",
-  "26aNMAI057x01",
-  "26aNMAI069x01",
+  "26aNDMI050x02", // již zapsán
+  "26aNEEXISTUJIp1", // neexistuje/nejsou opravneni
+  "26aNAIL062x05", // plný - čekačka 
+  "26aNAIL062p1", // plný - čekačka
+  "26aHDPV0001x01", // plný bez čekačky (právo moment)
+  "26aNDMI002p2", // částečný zápis
+  "26aNMAI069x01"// úspěch
 ];
 // #########################################################
 
@@ -46,6 +47,12 @@ for (const subject of subject_set) {
     waitUntil: 'domcontentloaded'
   });
 
+  // Skip if already enrolled or unable to enroll
+  if (!page.url().includes("do=vyber_rl")) {
+    console.log((performance.now() - startTime) / 1000, ` skipped ${subject}, already enrolled, ineligible to enroll, or does not exist`);  
+    continue
+  };
+
   // 3. Pustit selector na lístky pro tento předmět
   for (const ticket of tickets) {
     const el = page.locator(`input[value="${ticket}"]`);
@@ -55,17 +62,40 @@ for (const subject of subject_set) {
   }
 
   // 4. Kliknout zapsat
-  const zapBtn = page.locator(`input[name="zap_rl"]`);
-  await zapBtn.dispatchEvent('click');
-  await page.waitForEvent("framenavigated", { timeout: 60_000 });
-  await page.waitForEvent("domcontentloaded");
-  console.log((performance.now() - startTime) / 1000);
+  const zapBut = await page.getByRole('button', { name: 'Zapsat' })
+  if (await zapBut.count() === 0) {
+    console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject} due to insufficient capcity`)
+    continue
+  }
+
+  zapBut.dispatchEvent('click');
+
+  await page.waitForEvent("domcontentloaded", { timeout: 60_000});
+  
+  if (page.url().includes("do=vyber_rl")) {
+    console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject}, chosen tickets unavailable or missing lecture/seminar`)
+  }
+  
+  else if (page.url().includes("do=ceka")) {
+    console.log((performance.now() - startTime) / 1000, ` waitlisted in ${subject}`)
+    await page.getByRole('button', { name: 'Zapsat' }).dispatchEvent('click');
+    await page.waitForEvent("domcontentloaded", { timeout: 60_000});
+  }
+  
+  else {
+    console.log((performance.now() - startTime) / 1000, ` successfully enrolled in ${subject}`);
+  };
+  
+  
 }
 
 const endTime = performance.now();
 console.log(`Zápis trval ${(endTime - startTime) / 1000} sekund`);
 
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=kontrola`, {waitUntil: 'domcontentloaded'});
-await page.locator("input.but_next", { hasText: "Žádost o kontrolu" }).click({timeout: 60_000});
+await page.getByRole('button', { name: 'Žádost o kontrolu' }).click({timeout: 60_000});
+console.log(`requested validation`)
 
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 60_000, waitUntil: 'domcontentloaded'});
+
+// TODO: add repeat
