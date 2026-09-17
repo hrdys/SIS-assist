@@ -4,8 +4,8 @@ const SIS_URL = `https://is.cuni.cz/teststud`;
 const ZAPSAT_URL = `${SIS_URL}/predm_st2/redir.php?tid=&redir=povinn`;
 const ZMODUL_URL = `${SIS_URL}/predm_st2/index.php?tid=`;
 
-const browser = await chromium.launch({ headless: false });
-const context = await browser.newContext();
+const browser = await chromium.connectOverCDP("http://localhost:9222");
+const context = await browser.contexts()[0];
 const page = await context.newPage();
 
 // 0. Otevřít SIS a přihlásit se
@@ -20,15 +20,10 @@ const tickets: Array<string> = [
   "26aNMAI057p1",
   "26aNMAI057x01",
   "26aNMAI069x01",
-  "26aNPRG030p1",
-  "26aNPRG030x01",
-  "26aNPRG062p1",
-  "26aNPRG062x01",
-  "26aNSWI120p1",
-  "26aNSWI141p1",
-  "26aNTVY014x02",
 ];
 const subject_set = new Set(tickets.map(val => val.slice(3, 10)));
+
+await Bun.sleep(new Date(1789667641000));
 
 const startTime = performance.now();
 
@@ -63,3 +58,4 @@ await page.goto(`${ZMODUL_URL}&id=${session_id}&do=kontrola`, {waitUntil: 'domco
 await page.locator("input.but_next", { hasText: "Žádost o kontrolu" }).click({timeout: 60_000});
 
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 60_000, waitUntil: 'domcontentloaded'});
+
