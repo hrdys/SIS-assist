@@ -17,6 +17,9 @@ await page.getByRole('button', { name: 'Mobilní klíč eGovernmentu' }).click()
 await page.waitForURL(`${SIS_URL}/index.php*`, { timeout: 0, waitUntil: 'domcontentloaded' });
 const session_id = new URL(page.url()).searchParams.get("id");
 
+await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapis_plan`, { timeout: 0, waitUntil: 'domcontentloaded' });
+await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 0, waitUntil: 'domcontentloaded' });
+
 // ###################### Kódy lístků ######################
 const tickets: Array<string> = [
   "26aNDMI050x02", // již zapsán
