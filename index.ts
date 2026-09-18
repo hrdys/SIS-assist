@@ -78,7 +78,7 @@ for (const subject of subject_set) {
     continue
   }
 
-  zapBut.dispatchEvent('click');
+  await zapBut.dispatchEvent('click');
 
   await page.waitForEvent("domcontentloaded", { timeout: 60_000});
   
