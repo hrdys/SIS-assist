@@ -1,8 +1,8 @@
 0. otevřít SIS 3 a přihlásit se
-1. otevřít košík
+1. přednačíst modul zápis
 2. načíst kódy předmětů a lístků, deduplikovat
 3. pro každý předmět navigovat na zápisový link z modulu předměty
-4. pustit selector na lístky pro tento předmět
+4. kliknout na všechny vybrané lístky
 5. kliknout zapsat
 6. opakovat krok 3.
 7. zažádat o kontrolu
