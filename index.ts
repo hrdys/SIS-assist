@@ -1,6 +1,25 @@
 import { chromium } from 'playwright';
 
+// ###################### SIS URL ######################
 const SIS_URL = `https://is.cuni.cz/teststud`;
+// #########################################################
+
+// ################ Wait until (use miliseconds since Unix epoch) ################
+const SCHEDULED_UNIX_TIMESTAMP_MS: number = 1789667641000
+// #############################################################################
+
+// ###################### Kódy lístků ######################
+const tickets: Array<string> = [
+  "26aNDMI050x02", // již zapsán
+  "26aNEEXISTUJIp1", // neexistuje/nejsou opravneni
+  "26aNAIL062x05", // plný - čekačka 
+  "26aNAIL062p1", // plný - čekačka
+  "26aHDPV0001x01", // plný bez čekačky (právo moment)
+  "26aNDMI002p2", // částečný zápis
+  "26aNMAI069x01"// úspěch
+];
+// #########################################################
+
 const ZAPSAT_URL = `${SIS_URL}/predm_st2/redir.php?tid=&redir=povinn`;
 const ZMODUL_URL = `${SIS_URL}/predm_st2/index.php?tid=`;
 
@@ -20,24 +39,12 @@ const session_id = new URL(page.url()).searchParams.get("id");
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapis_plan`, { timeout: 0, waitUntil: 'domcontentloaded' });
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 0, waitUntil: 'domcontentloaded' });
 
-// ###################### Kódy lístků ######################
-const tickets: Array<string> = [
-  "26aNDMI050x02", // již zapsán
-  "26aNEEXISTUJIp1", // neexistuje/nejsou opravneni
-  "26aNAIL062x05", // plný - čekačka 
-  "26aNAIL062p1", // plný - čekačka
-  "26aHDPV0001x01", // plný bez čekačky (právo moment)
-  "26aNDMI002p2", // částečný zápis
-  "26aNMAI069x01"// úspěch
-];
-// #########################################################
+
 
 const regex = /^\d{2}[ab](.+)(?:p\d|x\d{2})$/gm;
 const subject_set = new Set(tickets.map(ticket => ticket.replace(regex, "$1")));
 
-// ################ SCHEDULER (use miliseconds since Unix epoch) ################
-const SCHEDULED_UNIX_TIMESTAMP_MS: number = 1789667641000
-// #############################################################################
+
 await Bun.sleep(new Date(SCHEDULED_UNIX_TIMESTAMP_MS));
 
 const startTime = performance.now();
