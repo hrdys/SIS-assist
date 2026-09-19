@@ -26,6 +26,9 @@ const ZMODUL_URL = `${SIS_URL}/predm_st2/index.php?tid=`;
 const browser = await chromium.launch({headless: false});
 const context = await browser.newContext();
 const page = await context.newPage();
+
+page.setDefaultTimeout(0);
+page.setDefaultNavigationTimeout(0);
 page.on('dialog', dialog => dialog.accept());
 // 0. Otevřít SIS a přihlásit se
 await page.goto(`${SIS_URL}/index.php?sso`);
@@ -33,11 +36,11 @@ await page.goto(`${SIS_URL}/index.php?sso`);
 await page.getByRole('button', { name: 'Identita občana' }).click();
 await page.getByRole('button', { name: 'Mobilní klíč eGovernmentu' }).click();
 
-await page.waitForURL(`${SIS_URL}/index.php*`, { timeout: 0, waitUntil: 'domcontentloaded' });
+await page.waitForURL(`${SIS_URL}/index.php*`, { waitUntil: 'domcontentloaded' });
 const session_id = new URL(page.url()).searchParams.get("id");
 
-await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapis_plan`, { timeout: 0, waitUntil: 'domcontentloaded' });
-await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 0, waitUntil: 'domcontentloaded' });
+await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapis_plan`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { waitUntil: 'domcontentloaded' });
 
 
 
@@ -50,63 +53,72 @@ await Bun.sleep(new Date(SCHEDULED_UNIX_TIMESTAMP_MS));
 
 const startTime = performance.now();
 
-// Synchronously iterate over subjects sequentially in a single tab
-for (const subject of subject_set) {
-  // 2. Navigovat na zápisový link pro předmět
+const enroll = async () => {
+  // Synchronously iterate over subjects sequentially in a single tab
+  for (const subject of subject_set) {
+    // 2. Navigovat na zápisový link pro předmět
   await page.goto(`${ZAPSAT_URL}&id=${session_id}&kod=${subject}`, {
-    timeout: 300_000,
     waitUntil: 'domcontentloaded'
   });
 
-  // Skip if already enrolled or unable to enroll
-  if (!page.url().includes("do=vyber_rl")) {
-    console.log((performance.now() - startTime) / 1000, ` skipped ${subject}, already enrolled, ineligible to enroll, or does not exist`);  
-    continue
-  };
+    // Skip if already enrolled or unable to enroll
+    if (!page.url().includes("do=vyber_rl")) {
+      console.log((performance.now() - startTime) / 1000, ` skipped ${subject}, already enrolled, ineligible to enroll, or does not exist`);  
+      continue
+    };
 
-  // 3. Pustit selector na lístky pro tento předmět
-  for (const ticket of reversed_tickets) {
-    const el = page.locator(`input[value="${ticket}"]`);
-    if (await el.count() === 1) {
-      await el.dispatchEvent('click');
+    // 3. Pustit selector na lístky pro tento předmět
+    for (const ticket of reversed_tickets) {
+      const el = page.locator(`input[value="${ticket}"]`);
+      if (await el.count() === 1) {
+        await el.dispatchEvent('click');
+      }
     }
-  }
 
-  // 4. Kliknout zapsat
-  const zapBut = await page.getByRole('button', { name: 'Zapsat' })
-  if (await zapBut.count() === 0) {
-    console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject} due to insufficient capcity`)
-    continue
-  }
+    // 4. Kliknout zapsat
+    const zapBut = await page.getByRole('button', { name: 'Zapsat' })
+    if (await zapBut.count() === 0) {
+      console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject} due to insufficient capcity`)
+      continue
+    }
 
-  await zapBut.dispatchEvent('click');
+    await zapBut.dispatchEvent('click');
 
-  await page.waitForEvent("domcontentloaded", { timeout: 60_000});
-  
-  if (page.url().includes("do=vyber_rl")) {
-    console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject}, chosen tickets unavailable or missing lecture/seminar`)
-  }
-  
-  else if (page.url().includes("do=ceka")) {
-    console.log((performance.now() - startTime) / 1000, ` waitlisted in ${subject}`)
-    await page.getByRole('button', { name: 'Zapsat' }).dispatchEvent('click');
-    await page.waitForEvent("domcontentloaded", { timeout: 60_000});
-  }
-  
-  else {
+    await page.waitForEvent("domcontentloaded");
+    
+    if (page.url().includes("do=vyber_rl")) {
+      console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject}, chosen tickets unavailable or missing lecture/seminar`)
+    }
+    
+    else if (page.url().includes("do=ceka")) {
+      console.log((performance.now() - startTime) / 1000, ` waitlisted in ${subject}`)
+      await page.getByRole('button', { name: 'Zapsat' }).dispatchEvent('click');
+    await page.waitForEvent("domcontentloaded");
+    }
+    
+    else {
     console.log((performance.now() - startTime) / 1000, ` successfully enrolled in ${subject}`);
-  };
+    };
+    
   
-  
-}
+  }
 
-const endTime = performance.now();
-console.log(`Zápis trval ${(endTime - startTime) / 1000} sekund`);
+  const endTime = performance.now();
+  console.log(`Zápis trval ${(endTime - startTime) / 1000} sekund`);
 
 await page.goto(`${ZMODUL_URL}&id=${session_id}&do=kontrola`, {waitUntil: 'domcontentloaded'});
-await page.getByRole('button', { name: 'Žádost o kontrolu' }).click({timeout: 60_000});
-console.log(`requested validation`)
+await page.getByRole('button', { name: 'Žádost o kontrolu' }).click();
+  console.log(`requested validation`)
 
-await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 60_000, waitUntil: 'domcontentloaded'});
+  await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`);
+};
 
-// TODO: add repeat
+while (true) {
+  try {
+    await enroll();
+    break;
+  } catch (e) {
+    console.log((performance.now() - startTime) / 1000, ` error: ${e}`);
+  }
+  prompt("Press enter to repeat. (already enrolled subjects will be ignored)")
+}
