@@ -105,18 +105,11 @@ const enroll = async () => {
 
   const endTime = performance.now();
   console.log(`Zápis trval ${(endTime - startTime) / 1000} sekund`);
-
-await page.goto(`${ZMODUL_URL}&id=${session_id}&do=kontrola`, {waitUntil: 'domcontentloaded'});
-await page.getByRole('button', { name: 'Žádost o kontrolu' }).click();
-  console.log(`requested validation`)
-
-  await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`);
 };
 
 while (true) {
   try {
     await enroll();
-    break;
   } catch (e) {
     console.log((performance.now() - startTime) / 1000, ` error: ${e}`);
   }
