@@ -63,8 +63,11 @@ const enroll = async () => {
 
     // Skip if already enrolled or unable to enroll
     if (!page.url().includes("do=vyber_rl")) {
-      console.log((performance.now() - startTime) / 1000, ` skipped ${subject}, already enrolled, ineligible to enroll, or does not exist`);  
+      console.log((performance.now() - startTime) / 1000, ` skipped ${subject}, enrollment hasn't started, already enrolled, ineligible to enroll, or does not exist`); //retriable
       continue
+    }
+    else {
+      subject_set.delete(subject); // Do not retry if opened successfully
     };
 
     // 3. Pustit selector na lístky pro tento předmět
@@ -78,7 +81,7 @@ const enroll = async () => {
     // 4. Kliknout zapsat
     const zapBut = await page.getByRole('button', { name: 'Zapsat' })
     if (await zapBut.count() === 0) {
-      console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject} due to insufficient capcity`)
+      console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject} due to insufficient capcity (missing 'zapsat' button)`) // do not retry
       continue
     }
 
@@ -87,17 +90,17 @@ const enroll = async () => {
     await page.waitForEvent("domcontentloaded");
     
     if (page.url().includes("do=vyber_rl")) {
-      console.log((performance.now() - startTime) / 1000, ` failed to enroll in ${subject}, chosen tickets unavailable or missing lecture/seminar`)
+      console.log((performance.now() - startTime) / 1000, `failed to enroll in ${subject}, chosen tickets unavailable`) // do not retry
     }
     
     else if (page.url().includes("do=ceka")) {
-      console.log((performance.now() - startTime) / 1000, ` waitlisted in ${subject}`)
+      console.log((performance.now() - startTime) / 1000, `waitlisted in ${subject}`) // do not retry
       await page.getByRole('button', { name: 'Zapsat' }).dispatchEvent('click');
     await page.waitForEvent("domcontentloaded");
     }
     
     else {
-    console.log((performance.now() - startTime) / 1000, ` successfully enrolled in ${subject}`);
+    console.log((performance.now() - startTime) / 1000, ` successfully enrolled in ${subject}`); // do not retry
     };
     
   
