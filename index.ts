@@ -43,6 +43,7 @@ await page.goto(`${ZMODUL_URL}&id=${session_id}&do=zapsane`, { timeout: 0, waitU
 
 const regex = /^\d{2}[ab](.+)(?:p\d|x\d{2})$/gm;
 const subject_set = new Set(tickets.map(ticket => ticket.replace(regex, "$1")));
+const reversed_tickets = tickets.toReversed();
 
 
 await Bun.sleep(new Date(SCHEDULED_UNIX_TIMESTAMP_MS));
@@ -64,7 +65,7 @@ for (const subject of subject_set) {
   };
 
   // 3. Pustit selector na lístky pro tento předmět
-  for (const ticket of tickets) {
+  for (const ticket of reversed_tickets) {
     const el = page.locator(`input[value="${ticket}"]`);
     if (await el.count() === 1) {
       await el.dispatchEvent('click');
